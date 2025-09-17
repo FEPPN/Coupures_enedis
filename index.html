@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <title>Coupures d'électricité – Vérification</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="preconnect" href="https://api-adresse.data.gouv.fr">
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+<body>
+  <main class="ppn-container">
+    <header class="ppn-header">
+      <h1>Vérifier une coupure d'électricité</h1>
+      <p class="ppn-subtitle">Saisissez votre adresse ou votre code postal. Nous interrogeons Enedis pour votre commune et affichons les derniers signalements de votre département.</p>
+    </header>
+
+    <section class="ppn-card">
+      <label for="ppn-address" class="ppn-label">Votre adresse ou code postal</label>
+      <div class="ppn-autocomplete">
+        <input id="ppn-address" type="text" placeholder="Ex : 69300, Annecy, 48 Rue ..." autocomplete="off" />
+        <ul id="ppn-suggest" class="ppn-suggest" role="listbox" aria-label="Suggestions"></ul>
+      </div>
+
+      <div class="ppn-actions">
+        <button id="ppn-check" class="ppn-btn">Vérifier</button>
+        <div id="ppn-spinner" class="ppn-spinner" hidden></div>
+      </div>
+
+      <div id="ppn-status" class="ppn-status"></div>
+    </section>
+
+    <section id="ppn-details-wrap" class="ppn-card" hidden>
+      <h2>Détails des coupures détectées</h2>
+      <ul id="ppn-details" class="ppn-details-list"></ul>
+    </section>
+
+    <section id="ppn-latest-wrap" class="ppn-card" hidden>
+      <h2>Dernières coupures signalées aujourd'hui dans votre département (<span id="ppn-dept"></span>)</h2>
+      <div id="ppn-latest" class="ppn-table-wrap"></div>
+    </section>
+
+    <section class="ppn-card">
+      <details>
+        <summary>Signaler une coupure dans votre rue</summary>
+        <div class="ppn-report">
+          <div class="ppn-grid">
+            <div>
+              <label for="ppn-report-city" class="ppn-label">Ville</label>
+              <input id="ppn-report-city" type="text" placeholder="Ex : Villeurbanne" />
+            </div>
+            <div>
+              <label for="ppn-report-dept" class="ppn-label">Département (numéro)</label>
+              <input id="ppn-report-dept" type="text" placeholder="Ex : 69" />
+            </div>
+          </div>
+          <label for="ppn-report-address" class="ppn-label">Adresse (facultatif)</label>
+          <input id="ppn-report-address" type="text" placeholder="Ex : 76 Rue Léon Blum" />
+
+          <label for="ppn-report-note" class="ppn-label">Note (optionnel)</label>
+          <input id="ppn-report-note" type="text" placeholder="Ex : pannes répétées, depuis 10h..." />
+
+          <button id="ppn-report-btn" class="ppn-btn-secondary">Envoyer le signalement</button>
+          <div id="ppn-report-msg" class="ppn-msg"></div>
+        </div>
+      </details>
+    </section>
+
+    <footer class="ppn-footer">
+      <small>Données Enedis interrogées côté serveur (via Apps Script). Les “dernières coupures” proviennent des signalements des utilisateurs de cet outil.</small>
+    </footer>
+  </main>
+
+  <script>
+    // ⇩⇩⇩ Remplace ici par TON endpoint Apps Script et ta clé ⇩⇩⇩
+    window.PPN_CONFIG = {
+      API_BASE: "https://script.google.com/macros/s/XXXXXXXXXXXX/exec",
+      API_KEY:  "TA_CLE_API",
+      LIMIT_LATEST: 20
+    };
+  </script>
+  <script src="./app.js" defer></script>
+</body>
+</html>
