@@ -11,6 +11,7 @@
   --err:#DC2626;
   --radius:14px;
 }
+
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--txt);font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;line-height:1.5}
 .ppn-container{max-width:860px;margin:24px auto;padding:16px}
@@ -28,7 +29,9 @@ body{margin:0;background:var(--bg);color:var(--txt);font-family:Inter,system-ui,
 .ppn-actions{display:flex;gap:10px;align-items:center;margin-top:10px}
 .ppn-btn{background:var(--brand);color:#fff;border:0;border-radius:10px;padding:10px 14px;cursor:pointer;font-weight:600}
 .ppn-btn:hover{filter:brightness(.95)}
+.ppn-btn[disabled]{opacity:.6;cursor:not-allowed}
 .ppn-btn-secondary{background:var(--brand2);color:#0b0f19;border:0;border-radius:10px;padding:10px 14px;cursor:pointer;font-weight:700}
+.ppn-btn-secondary[disabled]{opacity:.6;cursor:not-allowed}
 .ppn-spinner{width:18px;height:18px;border-radius:50%;border:3px solid #e5e7eb;border-top-color:var(--brand);animation:ppnspin 1s linear infinite}
 @keyframes ppnspin{to{transform:rotate(360deg)}}
 
@@ -49,6 +52,8 @@ table.ppn-table{width:100%;border-collapse:separate;border-spacing:0;background:
 .ppn-grid{display:grid;grid-template-columns:1fr 160px;gap:12px}
 .ppn-report input{width:100%;padding:10px;border:1px solid var(--border);border-radius:10px;margin-bottom:8px}
 .ppn-msg{margin-top:8px;color:var(--muted)}
-.ppn-footer{color:var(--muted);margin:18px 0;text-align:center;font-size:13px}
+.ppn-msg.ok{color:var(--ok)}
+.ppn-msg.err{color:var(--err)}
 
+.ppn-footer{color:var(--muted);margin:18px 0;text-align:center;font-size:13px}
 @media (max-width:680px){ .ppn-grid{grid-template-columns:1fr} }
