@@ -11,9 +11,13 @@
   <main class="ppn-container">
     <header class="ppn-header">
       <h1>Vérifier une coupure d'électricité</h1>
-      <p class="ppn-subtitle">Saisissez votre adresse ou votre code postal. Nous interrogeons Enedis pour votre commune et affichons les derniers signalements de votre département.</p>
+      <p class="ppn-subtitle">
+        Saisissez votre adresse ou votre code postal. Nous interrogeons Enedis pour votre
+        commune et affichons les derniers signalements de votre département.
+      </p>
     </header>
 
+    <!-- Recherche / statut -->
     <section class="ppn-card">
       <label for="ppn-address" class="ppn-label">Votre adresse ou code postal</label>
       <div class="ppn-autocomplete">
@@ -26,19 +30,22 @@
         <div id="ppn-spinner" class="ppn-spinner" hidden></div>
       </div>
 
-      <div id="ppn-status" class="ppn-status"></div>
+      <div id="ppn-status" class="ppn-status" role="status" aria-live="polite"></div>
     </section>
 
+    <!-- Détails des coupures -->
     <section id="ppn-details-wrap" class="ppn-card" hidden>
       <h2>Détails des coupures détectées</h2>
       <ul id="ppn-details" class="ppn-details-list"></ul>
     </section>
 
+    <!-- Derniers signalements -->
     <section id="ppn-latest-wrap" class="ppn-card" hidden>
       <h2>Dernières coupures signalées aujourd'hui dans votre département (<span id="ppn-dept"></span>)</h2>
       <div id="ppn-latest" class="ppn-table-wrap"></div>
     </section>
 
+    <!-- Formulaire de signalement -->
     <section class="ppn-card">
       <details>
         <summary>Signaler une coupure dans votre rue</summary>
@@ -53,6 +60,7 @@
               <input id="ppn-report-dept" type="text" placeholder="Ex : 69" />
             </div>
           </div>
+
           <label for="ppn-report-address" class="ppn-label">Adresse (facultatif)</label>
           <input id="ppn-report-address" type="text" placeholder="Ex : 76 Rue Léon Blum" />
 
@@ -60,20 +68,25 @@
           <input id="ppn-report-note" type="text" placeholder="Ex : pannes répétées, depuis 10h..." />
 
           <button id="ppn-report-btn" class="ppn-btn-secondary">Envoyer le signalement</button>
-          <div id="ppn-report-msg" class="ppn-msg"></div>
+          <div id="ppn-report-msg" class="ppn-msg" role="status" aria-live="polite"></div>
         </div>
       </details>
     </section>
 
     <footer class="ppn-footer">
-      <small>Données Enedis interrogées côté serveur (via Apps Script). Les “dernières coupures” proviennent des signalements des utilisateurs de cet outil.</small>
+      <small>
+        Données Enedis interrogées côté serveur (via Apps Script). Les “dernières coupures”
+        proviennent des signalements des utilisateurs de cet outil.
+      </small>
     </footer>
   </main>
 
+  <!-- ⚙️ Config du backend -->
   <script>
-    // ⇩⇩⇩ Remplace ici par TON endpoint Apps Script et ta clé ⇩⇩⇩
     window.PPN_CONFIG = {
+      // 👉 remplace par TON URL /exec Apps Script
       API_BASE: "https://script.google.com/macros/s/AKfycby-jw7HF-DZAfGCiptKNm1npZmH_zaTMCk-35KoenrEL7xmpRZ9uO-NUxQZnp-9e4WlKw/exec",
+      // 👉 DOIT être identique à API_KEY dans Apps Script
       API_KEY:  "papernest2025",
       LIMIT_LATEST: 20
     };
