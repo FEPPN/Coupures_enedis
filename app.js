@@ -12,7 +12,7 @@ function esc(s=''){ return s.replace(/[&<>"']/g, m=>({ '&':'&amp;','<':'&lt;','>
 function buildURL(params){
   const u = new URL(API_BASE);
   u.searchParams.set('key', API_KEY);
-  Object.entries(params).forEach(([k,v])=> v!=null && u.searchParams.set(k,String(v)));
+  Object.entries(params).forEach(([k,v])=> v!=null && v!=='' && u.searchParams.set(k,String(v)));
   return u.toString();
 }
 
@@ -25,7 +25,7 @@ async function fetchSuggestions(q){
   if (!r.ok) return [];
   const j = await r.json();
   return (j.features||[]).map(f=>({
-    label: f.properties.label,
+    label: f.properties.label,               // "48 Rue X 69300 Ville"
     city: f.properties.city || f.properties.name || '',
     postcode: f.properties.postcode || '',
     citycode: f.properties.citycode || ''
@@ -33,7 +33,7 @@ async function fetchSuggestions(q){
 }
 function deptFromPostcode(cp=''){
   if (!cp) return '';
-  if (cp.startsWith('97') || cp.startsWith('98')) return cp.slice(0,3); // DOM/TOM
+  if (cp.startsWith('97') || cp.startsWith('98')) return cp.slice(0,3);
   if (cp.startsWith('20')) return '2A/2B';
   return cp.slice(0,2);
 }
@@ -60,7 +60,7 @@ function renderDetails(list){
   if (!list?.length) return '<li>Aucun détail disponible.</li>';
   return list.map(d=>`
     <li>
-      <strong>${esc(d.localisation||'Zone impactée inconnue')}</strong><br>
+      <strong>${esc(d.localisation||'Secteur : commune')}</strong><br>
       Début : ${esc(d.dateDebut||'—')}
       ${d.dateFinPrevue ? ' – Rétablissement estimé : '+esc(d.dateFinPrevue) : ''}
       <br>Type : ${esc(d.typeIncident||'—')} | État : ${esc(d.etat||'—')}
@@ -71,9 +71,9 @@ function renderDetails(list){
 }
 
 // --- Elements ---
-const input = $('#ppn-address');
+const input   = $('#ppn-address');
 const suggest = $('#ppn-suggest');
-const btnCheck = $('#ppn-check');
+const btnCheck= $('#ppn-check');
 const spinner = $('#ppn-spinner');
 const statusBox = $('#ppn-status');
 
@@ -93,7 +93,10 @@ const rMsg  = $('#ppn-report-msg');
 
 // --- Autocomplete ---
 let suggData = [];
+let lastSelected = null;
+
 input.addEventListener('input', async (e)=>{
+  lastSelected = null;
   const q = (e.target.value||'').trim();
   if (!q || q.length<2){ suggest.style.display='none'; suggest.innerHTML=''; return; }
   try{
@@ -104,6 +107,7 @@ input.addEventListener('input', async (e)=>{
     suggest.style.display = 'block';
   }catch{ suggest.style.display='none'; }
 });
+
 suggest.addEventListener('click', (e)=>{
   const li = e.target.closest('li'); if (!li) return;
   const sel = suggData[Number(li.dataset.i)];
@@ -111,7 +115,9 @@ suggest.addEventListener('click', (e)=>{
   suggest.style.display='none';
   rCity.value = sel.city || '';
   rDept.value = deptFromPostcode(sel.postcode);
+  lastSelected = sel; // <- on mémorise pour le backend
 });
+
 document.addEventListener('click', (e)=>{
   if (!suggest.contains(e.target) && e.target !== input) suggest.style.display='none';
 });
@@ -121,21 +127,34 @@ btnCheck.addEventListener('click', async ()=>{
   const q = (input.value||'').trim();
   if (!q){ statusBox.textContent='Veuillez saisir une adresse ou un code postal.'; statusBox.className='ppn-status err'; return; }
 
-  hide(statusBox); hide(detailsWrap); hide(latestWrap); show(spinner);
+  hide(statusBox); hide(detailsWrap); hide(latestWrap);
+  show(spinner); btnCheck.disabled = true; btnCheck.textContent = 'Vérification…';
 
-  let cp = ''; let city = q;
+  // Ville + CP à envoyer ; si on a une suggestion, on utilise son city/cp + on passe l’adresse
+  let city = q, cp = '';
   const m = q.match(/\b(\d{5})\b/); if (m) cp = m[1];
+
+  const params = { fn:'status' };
+  if (lastSelected){
+    params.city = lastSelected.city || city;
+    params.cp   = lastSelected.postcode || cp;
+    params.addr = lastSelected.label;
+    params.addr_city = lastSelected.city || '';
+    params.addr_cp   = lastSelected.postcode || '';
+  } else {
+    params.city = city;
+    params.cp   = cp;
+  }
 
   try{
     // 1) Statut Enedis
-    const uStatus = buildURL({ fn:'status', city, cp });
-    const r1 = await fetch(uStatus);
+    const r1 = await fetch(buildURL(params));
     const j1 = await r1.json();
 
-    hide(spinner);
+    hide(spinner); btnCheck.disabled = false; btnCheck.textContent = 'Vérifier';
 
     if (!j1.ok){
-      statusBox.textContent = 'Erreur: ' + (j1.error || 'inconnue');
+      statusBox.textContent = 'Erreur : ' + (j1.error || 'inconnue');
       statusBox.className = 'ppn-status err'; show(statusBox);
       return;
     }
@@ -154,13 +173,11 @@ btnCheck.addEventListener('click', async ()=>{
     }
     show(statusBox);
 
-    // 2) Derniers signalements (département)
+    // 2) Derniers signalements
     const dept = j1.dept || deptFromPostcode(j1.cp || cp);
     if (dept){
-      const uLatest = buildURL({ fn:'latest', dept });
-      const r2 = await fetch(uLatest);
+      const r2 = await fetch(buildURL({ fn:'latest', dept }));
       const j2 = await r2.json();
-
       if (j2.ok){
         deptSpan.textContent = esc(dept);
         latestBox.innerHTML = renderLatestTable(j2.items || []);
@@ -168,28 +185,39 @@ btnCheck.addEventListener('click', async ()=>{
       }
     }
   }catch{
-    hide(spinner);
+    hide(spinner); btnCheck.disabled = false; btnCheck.textContent = 'Vérifier';
     statusBox.textContent = 'Erreur réseau.'; statusBox.className='ppn-status err'; show(statusBox);
   }
 });
 
-// --- Report ---
+// --- Report (UX avec retour visible) ---
 rBtn.addEventListener('click', async ()=>{
   const dept = (rDept.value||'').trim();
   const city = (rCity.value||'').trim();
-  if (!dept || !city){ rMsg.textContent='Renseignez au moins le département et la ville.'; return; }
+  if (!dept || !city){ rMsg.textContent='Renseignez au moins le département et la ville.'; rMsg.className='ppn-msg err'; return; }
   const address = (rAddr.value||'').trim();
   const note = (rNote.value||'').trim();
 
+  rBtn.disabled = true;
+  const oldTxt = rBtn.textContent;
+  rBtn.textContent = 'Envoi…';
+
   try{
-    const u = buildURL({ fn:'report', dept, city, address, postal_code:'', note });
-    const r = await fetch(u);
+    const r = await fetch(buildURL({ fn:'report', dept, city, address, postal_code:'', note }));
     const j = await r.json();
     if (j.ok){
-      rMsg.textContent = 'Merci, votre signalement a été enregistré.';
+      rMsg.textContent = '✅ Votre signalement a bien été envoyé.';
+      rMsg.className = 'ppn-msg ok';
       rAddr.value=''; rNote.value='';
     } else {
-      rMsg.textContent = 'Erreur lors de l’enregistrement.';
+      rMsg.textContent = '❌ Erreur lors de l’enregistrement.';
+      rMsg.className = 'ppn-msg err';
     }
-  }catch{ rMsg.textContent = 'Erreur réseau.'; }
+  }catch{
+    rMsg.textContent = '❌ Erreur réseau.';
+    rMsg.className = 'ppn-msg err';
+  }finally{
+    rBtn.disabled = false;
+    rBtn.textContent = oldTxt;
+  }
 });
