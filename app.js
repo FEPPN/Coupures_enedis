@@ -208,9 +208,12 @@ btnCheck.addEventListener('click', async ()=>{
     }
 
     // NEW: entête générique — préfère l’adresse travaux si dispo (toutes communes)
-    const primaryLoc = pickBestLocation(j1.details || []);
-const where = primaryLoc || `${j1.city} (${j1.cp})`;
-statusBox.innerHTML = `⚠️ <strong>Coupure(s) en cours</strong> — ${esc(where)}`;
+      // Affichage statut
+    if (j1.has_outage){
+      // NEW: entête générique — préfère l’adresse travaux si dispo (toutes communes)
+      const primaryLoc = pickBestLocation(j1.details || []);
+      const where = primaryLoc || `${j1.city} (${j1.cp})`;
+      statusBox.innerHTML = `⚠️ <strong>Coupure(s) en cours</strong> — ${esc(where)}`;
 
       statusBox.className = 'ppn-status warn';
 
@@ -222,6 +225,7 @@ statusBox.innerHTML = `⚠️ <strong>Coupure(s) en cours</strong> — ${esc(whe
       statusBox.innerHTML = `✅ <strong>Pas de coupure en cours</strong> — ${esc(j1.city)} (${esc(j1.cp)})`;
       statusBox.className = 'ppn-status ok';
     }
+
     show(statusBox);
 
     // 2) Derniers signalements
