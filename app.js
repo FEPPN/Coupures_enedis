@@ -38,6 +38,25 @@ function deptFromPostcode(cp=''){
   return cp.slice(0,2);
 }
 
+// --- NEW: helper générique pour formater l’adresse travaux (toutes communes)
+function prettifyMatchAddr(matchAddr = '', postal = '') {
+  if (!matchAddr) return '';
+  let s = String(matchAddr).trim();
+  // Normaliser espaces/virgules
+  s = s.replace(/\s*,\s*/g, ', ').replace(/\s{2,}/g, ' ').trim();
+  // Patron générique: "<voie>, <CP>, <libellé après CP>[, ...]" -> "<voie>, <CP> <libellé>"
+  const m = s.match(/^\s*(.+?),\s*(\d{5})(?:,\s*([^,]+))?/);
+  if (m) {
+    const street = m[1].trim();
+    const cp = m[2];
+    const after = (m[3] || '').trim(); // ex: "Lyon 3e", "Bordeaux", "Saint-Denis"
+    return after ? `${street}, ${cp} ${after}` : `${street}, ${cp}`;
+  }
+  // fallback minimal si on connaît le CP
+  if (postal && !s.includes(postal)) s += `, ${postal}`;
+  return s;
+}
+
 // --- Renderers ---
 function renderLatestTable(items){
   const rows = (items||[]).slice(0, LIMIT_LATEST).map(it=>`
@@ -56,18 +75,27 @@ function renderLatestTable(items){
     </div>
   `;
 }
+
+// NEW: privilégie l’adresse travaux (Match_addr/Postal) pour chaque item
 function renderDetails(list){
   if (!list?.length) return '<li>Aucun détail disponible.</li>';
-  return list.map(d=>`
-    <li>
-      <strong>${esc(d.localisation||'Secteur : commune')}</strong><br>
-      Début : ${esc(d.dateDebut||'—')}
-      ${d.dateFinPrevue ? ' – Rétablissement estimé : '+esc(d.dateFinPrevue) : ''}
-      <br>Type : ${esc(d.typeIncident||'—')} | État : ${esc(d.etat||'—')}
-      ${d.nbFoyers!=null ? ' | Foyers concernés : '+esc(String(d.nbFoyers)) : ''}
-      ${d.id ? '<br><small>ID : '+esc(d.id)+'</small>' : ''}
-    </li>
-  `).join('');
+  return list.map(d=>{
+    const loc =
+      prettifyMatchAddr(d.matchAddr || d.Match_addr || '', d.postal || '') ||
+      (d.localisation && d.localisation.replace(/^Secteur\s*:\s*/i,'')) ||
+      'commune';
+
+    return `
+      <li>
+        <strong>Secteur : ${esc(loc)}</strong><br>
+        Début : ${esc(d.dateDebut||'—')}
+        ${d.dateFinPrevue ? ' – Rétablissement estimé : '+esc(d.dateFinPrevue) : ''}
+        <br>Type : ${esc(d.typeIncident||'—')} | État : ${esc(d.etat||'—')}
+        ${d.nbFoyers!=null ? ' | Foyers concernés : '+esc(String(d.nbFoyers)) : ''}
+        ${d.id ? '<br><small>ID : '+esc(d.id)+'</small>' : ''}
+      </li>
+    `;
+  }).join('');
 }
 
 // --- Elements ---
@@ -159,10 +187,20 @@ btnCheck.addEventListener('click', async ()=>{
       return;
     }
 
-    // Affichage statut
+    // NEW: entête générique — préfère l’adresse travaux si dispo (toutes communes)
     if (j1.has_outage){
-      statusBox.innerHTML = `⚠️ <strong>Coupure(s) en cours</strong> — ${esc(j1.city)} (${esc(j1.cp)})`;
+      let primaryLoc = '';
+      if (j1.details?.length){
+        const d0 = j1.details[0];
+        primaryLoc =
+          prettifyMatchAddr(d0.matchAddr || d0.Match_addr || '', d0.postal || '') ||
+          (d0.localisation && !/inconnue/i.test(d0.localisation) ? d0.localisation.replace(/^Secteur\s*:\s*/i,'') : '');
+      }
+      const where = primaryLoc || `${j1.city} (${j1.cp})`;
+
+      statusBox.innerHTML = `⚠️ <strong>Coupure(s) en cours</strong> — ${esc(where)}`;
       statusBox.className = 'ppn-status warn';
+
       if (j1.details?.length){
         detailsList.innerHTML = renderDetails(j1.details);
         show(detailsWrap);
