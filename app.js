@@ -56,6 +56,26 @@ function prettifyMatchAddr(matchAddr = '', postal = '') {
   if (postal && !s.includes(postal)) s += `, ${postal}`;
   return s;
 }
+// Retourne la meilleure localisation parmi les détails (adresse > localisation > vide)
+function pickBestLocation(details = []) {
+  if (!Array.isArray(details) || !details.length) return '';
+
+  // 1) on privilégie un Match_addr exploitable (n'importe quel type d'incident)
+  for (const d of details) {
+    const maddr = d.matchAddr || d.Match_addr || '';
+    const loc = prettifyMatchAddr(maddr, d.postal || '');
+    if (loc) return loc;
+  }
+
+  // 2) sinon, une localisation déjà fournie par Enedis (évite "inconnue" / "Secteur : ")
+  for (const d of details) {
+    const loc = (d.localisation || '').replace(/^Secteur\s*:\s*/i,'').trim();
+    if (loc && !/inconnue/i.test(loc)) return loc;
+  }
+
+  // 3) à défaut
+  return '';
+}
 
 // --- Renderers ---
 function renderLatestTable(items){
@@ -81,7 +101,7 @@ function renderDetails(list){
   if (!list?.length) return '<li>Aucun détail disponible.</li>';
   return list.map(d=>{
     const loc =
-      prettifyMatchAddr(d.matchAddr || d.Match_addr || d.adress || '', d.postal || '') ||
+      prettifyMatchAddr(d.matchAddr || d.Match_addr || '', d.postal || '') ||
       (d.localisation && d.localisation.replace(/^Secteur\s*:\s*/i,'')) ||
       'commune';
 
@@ -188,17 +208,10 @@ btnCheck.addEventListener('click', async ()=>{
     }
 
     // NEW: entête générique — préfère l’adresse travaux si dispo (toutes communes)
-    if (j1.has_outage){
-      let primaryLoc = '';
-      if (j1.details?.length){
-        const d0 = j1.details[0];
-        primaryLoc =
-          prettifyMatchAddr(d0.matchAddr || d0.Match_addr || '', d0.postal || '') ||
-          (d0.localisation && !/inconnue/i.test(d0.localisation) ? d0.localisation.replace(/^Secteur\s*:\s*/i,'') : '');
-      }
-      const where = primaryLoc || `${j1.city} (${j1.cp})`;
+    const primaryLoc = pickBestLocation(j1.details || []);
+const where = primaryLoc || `${j1.city} (${j1.cp})`;
+statusBox.innerHTML = `⚠️ <strong>Coupure(s) en cours</strong> — ${esc(where)}`;
 
-      statusBox.innerHTML = `⚠️ <strong>Coupure(s) en cours</strong> — ${esc(where)}`;
       statusBox.className = 'ppn-status warn';
 
       if (j1.details?.length){
