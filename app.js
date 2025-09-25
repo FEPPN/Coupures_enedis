@@ -81,7 +81,7 @@ function renderDetails(list){
   if (!list?.length) return '<li>Aucun détail disponible.</li>';
   return list.map(d=>{
     const loc =
-      prettifyMatchAddr(d.matchAddr || d.Match_addr || '', d.postal || '') ||
+      prettifyMatchAddr(d.matchAddr || d.Match_addr || d.adress || '', d.postal || '') ||
       (d.localisation && d.localisation.replace(/^Secteur\s*:\s*/i,'')) ||
       'commune';
 
