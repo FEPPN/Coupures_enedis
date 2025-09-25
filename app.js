@@ -107,12 +107,11 @@ function renderDetails(list){
 
     return `
       <li>
-        <strong>Secteur : ${esc(loc)}</strong><br>
-        Début : ${esc(d.dateDebut||'—')}
-        ${d.dateFinPrevue ? ' – Rétablissement estimé : '+esc(d.dateFinPrevue) : ''}
-        <br>Type : ${esc(d.typeIncident||'—')} | État : ${esc(d.etat||'—')}
-        ${d.nbFoyers!=null ? ' | Foyers concernés : '+esc(String(d.nbFoyers)) : ''}
-        ${d.id ? '<br><small>ID : '+esc(d.id)+'</small>' : ''}
+        <strong>Adresse de la coupure : ${esc(loc)}</strong><br>
+        Le courant est coupé depuis le : ${esc(d.dateDebut||'—')}
+        ${d.dateFinPrevue ? ' 
+          – Rétablissement du courant estimé : '+esc(d.dateFinPrevue) : ''}
+        <br>Il s'agit d'une coupure de type ${esc(d.typeIncident||'—')} | État : ${esc(d.etat||'—')}
       </li>
     `;
   }).join('');
