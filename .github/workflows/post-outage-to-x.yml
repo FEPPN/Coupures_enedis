@@ -35,14 +35,14 @@ jobs:
       - name: Build message (privacy + timezone)
         id: build
         env:
-          # payload dispatch OU valeurs manuelles (Run workflow)
-          CITY:        ${{ github.event.client_payload.city        || inputs.city }}
-          DEPT:        ${{ github.event.client_payload.dept        || inputs.dept }}
-          ADDRESS:     ${{ github.event.client_payload.address     || inputs.address }}
-          POSTAL_CODE: ${{ github.event.client_payload.postal_code || inputs.postal_code }}
-          TS_ISO:      ${{ github.event.client_payload.timestamp_iso || inputs.timestamp_iso }}
-          EXTRA:       ${{ github.event.client_payload.extra       || inputs.extra }}
-          TOOL_URL:    ${{ github.event.client_payload.tool_url    || inputs.tool_url }}
+  CITY:        ${{ github.event.client_payload.city        || inputs.city }}
+  DEPT:        ${{ github.event.client_payload.dept        || inputs.dept }}
+  ADDRESS:     ${{ github.event.client_payload.address     || inputs.address }}
+  POSTAL_CODE: ${{ github.event.client_payload.postal_code || inputs.postal_code }}
+  TS_ISO:      ${{ github.event.client_payload.timestamp_iso || inputs.timestamp_iso }}
+  EXTRA:       ${{ github.event.client_payload.extra       || inputs.extra }}
+  TOOL_URL:    ${{ github.event.client_payload.tool_url    || inputs.tool_url }}
+
         run: |
           python - << 'PY'
           import os, sys, hashlib
