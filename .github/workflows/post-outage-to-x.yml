@@ -1,7 +1,19 @@
 name: Post outage report to X
+
 on:
+  # déclenché par Apps Script
   repository_dispatch:
     types: [outage_reported]
+  # déclencheur manuel pour tester depuis l'UI
+  workflow_dispatch:
+    inputs:
+      city:         { description: "Ville", required: true,  type: string, default: "Testville" }
+      dept:         { description: "Dept",  required: false, type: string, default: "59" }
+      address:      { description: "Adresse", required: false, type: string, default: "12 Rue de la Paix" }
+      postal_code:  { description: "CP", required: false, type: string, default: "59000" }
+      extra:        { description: "Note", required: false, type: string, default: "Test dispatch" }
+      timestamp_iso:{ description: "Horodatage ISO (UTC)", required: false, type: string, default: "2025-11-06T10:00:00Z" }
+      tool_url:     { description: "Lien outil", required: false, type: string, default: "https://feppn.github.io/Coupures_enedis/" }
 
 concurrency:
   group: outage-tweets
@@ -10,6 +22,7 @@ concurrency:
 jobs:
   tweet:
     runs-on: ubuntu-latest
+
     steps:
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -24,13 +37,14 @@ jobs:
       - name: Build message (privacy + timezone)
         id: build
         env:
-          CITY:          ${{ github.event.client_payload.city }}
-          DEPT:          ${{ github.event.client_payload.dept }}
-          ADDRESS:       ${{ github.event.client_payload.address }}
-          POSTAL_CODE:   ${{ github.event.client_payload.postal_code }}
-          TS_ISO:        ${{ github.event.client_payload.timestamp_iso }}
-          EXTRA:         ${{ github.event.client_payload.extra }}
-          TOOL_URL:      ${{ github.event.client_payload.tool_url }}
+          # payload dispatch OU valeurs manuelles (Run workflow)
+          CITY:        ${{ github.event.client_payload.city        || inputs.city }}
+          DEPT:        ${{ github.event.client_payload.dept        || inputs.dept }}
+          ADDRESS:     ${{ github.event.client_payload.address     || inputs.address }}
+          POSTAL_CODE: ${{ github.event.client_payload.postal_code || inputs.postal_code }}
+          TS_ISO:      ${{ github.event.client_payload.timestamp_iso || inputs.timestamp_iso }}
+          EXTRA:       ${{ github.event.client_payload.extra       || inputs.extra }}
+          TOOL_URL:    ${{ github.event.client_payload.tool_url    || inputs.tool_url }}
         run: |
           python - << 'PY'
           import os, sys, hashlib
@@ -51,7 +65,7 @@ jobs:
           if not city or not tsiso:
             print("::error::Missing city or timestamp_iso"); sys.exit(1)
 
-          # Obfuscation: masque n° de rue pour la vie privée
+          # obfuscation du n° de rue
           def obfuscate(a:str)->str:
             if not a: return ""
             a = " ".join(a.replace("#","").split())
@@ -65,7 +79,7 @@ jobs:
 
           addr_pub = obfuscate(addr)
 
-          # Heure locale Europe/Paris
+          # heure lisible Europe/Paris
           pretty_time = tsiso
           try:
             dt = datetime.fromisoformat(tsiso.replace("Z","+00:00"))
@@ -74,7 +88,7 @@ jobs:
           except Exception:
             pass
 
-          # Compose le tweet
+          # message
           line1 = f"⚡️ Coupure signalée à {city}"
           if dept: line1 += f" ({dept})"
           if pc:   line1 += f" {pc}"
@@ -85,14 +99,17 @@ jobs:
           if extra:    lines.append(f"ℹ️ {extra}")
           if tool:     lines.append(tool)
 
-          msg = "\n".join([l for l in lines if l]).strip()
-          msg = msg[:280]  # sûreté 280 chars
+          msg = "\n".join([l for l in lines if l]).strip()[:280]
 
-          # Dédup (ville+adresse+timestamp)
+          # clé anti-doublon
           key = hashlib.sha256((city+"|"+addr+"|"+tsiso).encode()).hexdigest()[:16]
 
-          print(f"message<<EOF\n{msg}\nEOF")
-          print(f"dedup_key={key}")
+          # ✅ publier les outputs correctement
+          with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as f:
+            print("message<<EOF", file=f)
+            print(msg, file=f)
+            print("EOF", file=f)
+            print(f"dedup_key={key}", file=f)
           PY
 
       - name: Skip if duplicate
@@ -109,6 +126,7 @@ jobs:
       - name: Send tweet
         if: steps.dedup.outputs.cache-hit != 'true'
         env:
+          # tu as nommé tes secrets X_* : on garde ces noms
           API_KEY:        ${{ secrets.X_API_KEY }}
           API_SECRET:     ${{ secrets.X_API_KEY_SECRET }}
           ACCESS_TOKEN:   ${{ secrets.X_ACCESS_TOKEN }}
