@@ -1,10 +1,8 @@
 name: Post outage report to X
 
 on:
-  # déclenché par Apps Script
   repository_dispatch:
     types: [outage_reported]
-  # déclencheur manuel pour tester depuis l'UI
   workflow_dispatch:
     inputs:
       city:         { description: "Ville", required: true,  type: string, default: "Testville" }
