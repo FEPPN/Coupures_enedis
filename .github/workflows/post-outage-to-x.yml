@@ -5,13 +5,42 @@ on:
     types: [outage_reported]
   workflow_dispatch:
     inputs:
-      city:         { description: "Ville", required: true,  type: string, default: "Testville" }
-      dept:         { description: "Dept",  required: false, type: string, default: "59" }
-      address:      { description: "Adresse", required: false, type: string, default: "12 Rue de la Paix" }
-      postal_code:  { description: "CP", required: false, type: string, default: "59000" }
-      extra:        { description: "Note", required: false, type: string, default: "Test dispatch" }
-      timestamp_iso:{ description: "Horodatage ISO (UTC)", required: false, type: string, default: "2025-11-06T10:00:00Z" }
-      tool_url:     { description: "Lien outil", required: false, type: string, default: "https://feppn.github.io/Coupures_enedis/" }
+      city:
+        description: "Ville"
+        required: true
+        type: string
+        default: "Testville"
+      dept:
+        description: "Dept"
+        required: false
+        type: string
+        default: "59"
+      address:
+        description: "Adresse"
+        required: false
+        type: string
+        default: "12 Rue de la Paix"
+      postal_code:
+        description: "CP"
+        required: false
+        type: string
+        default: "59000"
+      extra:
+        description: "Note"
+        required: false
+        type: string
+        default: "Test dispatch"
+      timestamp_iso:
+        description: "Horodatage ISO (UTC)"
+        required: false
+        type: string
+        default: "2025-11-06T10:00:00Z"
+      tool_url:
+        description: "Lien outil"
+        required: false
+        type: string
+        default: "https://feppn.github.io/Coupures_enedis/"
+
 
 concurrency:
   group: outage-tweets
