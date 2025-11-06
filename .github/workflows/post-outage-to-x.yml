@@ -142,7 +142,7 @@ jobs:
         if: steps.dedup.outputs.cache-hit != 'true'
         run: echo "seen" > .dedup-marker
 
-            - name: Send tweet
+      - name: Send tweet
         if: steps.dedup.outputs.cache-hit != 'true'
         env:
           API_KEY:        ${{ secrets.X_API_KEY }}
