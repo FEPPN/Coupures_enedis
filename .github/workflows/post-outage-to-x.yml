@@ -61,25 +61,25 @@ jobs:
           python -m pip install --upgrade pip
           pip install tweepy
 
-      - name: Build message (privacy + timezone)
+            - name: Build message (privacy + timezone)
         id: build
         env:
-  CITY:        ${{ github.event.client_payload.city        || inputs.city }}
-  DEPT:        ${{ github.event.client_payload.dept        || inputs.dept }}
-  ADDRESS:     ${{ github.event.client_payload.address     || inputs.address }}
-  POSTAL_CODE: ${{ github.event.client_payload.postal_code || inputs.postal_code }}
-  TS_ISO:      ${{ github.event.client_payload.timestamp_iso || inputs.timestamp_iso }}
-  EXTRA:       ${{ github.event.client_payload.extra       || inputs.extra }}
-  TOOL_URL:    ${{ github.event.client_payload.tool_url    || inputs.tool_url }}
-
+          CITY:        ${{ github.event.client_payload.city        || github.event.inputs.city }}
+          DEPT:        ${{ github.event.client_payload.dept        || github.event.inputs.dept }}
+          ADDRESS:     ${{ github.event.client_payload.address     || github.event.inputs.address }}
+          POSTAL_CODE: ${{ github.event.client_payload.postal_code || github.event.inputs.postal_code }}
+          TS_ISO:      ${{ github.event.client_payload.timestamp_iso || github.event.inputs.timestamp_iso }}
+          EXTRA:       ${{ github.event.client_payload.extra       || github.event.inputs.extra }}
+          TOOL_URL:    ${{ github.event.client_payload.tool_url    || github.event.inputs.tool_url }}
+        shell: bash
         run: |
-          python - << 'PY'
+          python - <<'PY'
           import os, sys, hashlib
           from datetime import datetime
           try:
-            from zoneinfo import ZoneInfo
+              from zoneinfo import ZoneInfo
           except Exception:
-            ZoneInfo = None
+              ZoneInfo = None
 
           city  = (os.environ.get("CITY") or "").strip()
           dept  = (os.environ.get("DEPT") or "").strip()
@@ -90,32 +90,29 @@ jobs:
           tool  = (os.environ.get("TOOL_URL") or "").strip()
 
           if not city or not tsiso:
-            print("::error::Missing city or timestamp_iso"); sys.exit(1)
+              print("::error::Missing city or timestamp_iso"); sys.exit(1)
 
-          # obfuscation du n° de rue
-          def obfuscate(a:str)->str:
-            if not a: return ""
-            a = " ".join(a.replace("#","").split())
-            parts = a.split(",")
-            head = parts[0].split()
-            if head and head[0].isdigit():
-              head = ["🔢"] + head[1:]
-            head = " ".join(head)
-            tail = ", ".join([p.strip() for p in parts[1:] if p.strip()])
-            return head + (", " + tail if tail else "")
+          def obfuscate(a: str) -> str:
+              if not a: return ""
+              a = " ".join(a.replace("#","").split())
+              parts = a.split(",")
+              head = parts[0].split()
+              if head and head[0].isdigit():
+                  head = ["🔢"] + head[1:]
+              head = " ".join(head)
+              tail = ", ".join([p.strip() for p in parts[1:] if p.strip()])
+              return head + (", " + tail if tail else "")
 
           addr_pub = obfuscate(addr)
 
-          # heure lisible Europe/Paris
           pretty_time = tsiso
           try:
-            dt = datetime.fromisoformat(tsiso.replace("Z","+00:00"))
-            if ZoneInfo:
-              pretty_time = dt.astimezone(ZoneInfo("Europe/Paris")).strftime("%d/%m %H:%M")
+              dt = datetime.fromisoformat(tsiso.replace("Z","+00:00"))
+              if ZoneInfo:
+                  pretty_time = dt.astimezone(ZoneInfo("Europe/Paris")).strftime("%d/%m %H:%M")
           except Exception:
-            pass
+              pass
 
-          # message
           line1 = f"⚡️ Coupure signalée à {city}"
           if dept: line1 += f" ({dept})"
           if pc:   line1 += f" {pc}"
@@ -127,17 +124,15 @@ jobs:
           if tool:     lines.append(tool)
 
           msg = "\n".join([l for l in lines if l]).strip()[:280]
-
-          # clé anti-doublon
           key = hashlib.sha256((city+"|"+addr+"|"+tsiso).encode()).hexdigest()[:16]
 
-          # ✅ publier les outputs correctement
           with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as f:
-            print("message<<EOF", file=f)
-            print(msg, file=f)
-            print("EOF", file=f)
-            print(f"dedup_key={key}", file=f)
+              print("message<<EOF", file=f)
+              print(msg, file=f)
+              print("EOF", file=f)
+              print(f"dedup_key={key}", file=f)
           PY
+
 
       - name: Skip if duplicate
         id: dedup
