@@ -41,7 +41,6 @@ on:
         type: string
         default: "https://feppn.github.io/Coupures_enedis/"
 
-
 concurrency:
   group: outage-tweets
   cancel-in-progress: false
@@ -49,7 +48,6 @@ concurrency:
 jobs:
   tweet:
     runs-on: ubuntu-latest
-
     steps:
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -61,7 +59,7 @@ jobs:
           python -m pip install --upgrade pip
           pip install tweepy
 
-            - name: Build message (privacy + timezone)
+      - name: Build message (privacy + timezone)
         id: build
         env:
           CITY:        ${{ github.event.client_payload.city        || github.event.inputs.city }}
@@ -133,7 +131,6 @@ jobs:
               print(f"dedup_key={key}", file=f)
           PY
 
-
       - name: Skip if duplicate
         id: dedup
         uses: actions/cache@v4
@@ -148,20 +145,19 @@ jobs:
       - name: Send tweet
         if: steps.dedup.outputs.cache-hit != 'true'
         env:
-          # tu as nommé tes secrets X_* : on garde ces noms
           API_KEY:        ${{ secrets.X_API_KEY }}
           API_SECRET:     ${{ secrets.X_API_KEY_SECRET }}
           ACCESS_TOKEN:   ${{ secrets.X_ACCESS_TOKEN }}
           ACCESS_SECRET:  ${{ secrets.X_ACCESS_TOKEN_SECRET }}
           TWEET_MESSAGE:  ${{ steps.build.outputs.message }}
         run: |
-          python - << 'PY'
+          python - <<'PY'
           import os, tweepy
           auth = tweepy.OAuth1UserHandler(
-            os.environ["API_KEY"],
-            os.environ["API_SECRET"],
-            os.environ["ACCESS_TOKEN"],
-            os.environ["ACCESS_SECRET"]
+              os.environ["API_KEY"],
+              os.environ["API_SECRET"],
+              os.environ["ACCESS_TOKEN"],
+              os.environ["ACCESS_SECRET"]
           )
           tweepy.API(auth).update_status(status=os.environ["TWEET_MESSAGE"])
           print("Tweet sent.")
