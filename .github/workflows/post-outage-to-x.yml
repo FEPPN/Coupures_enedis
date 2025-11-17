@@ -90,9 +90,11 @@ jobs:
           if not city or not tsiso:
               print("::error::Missing city or timestamp_iso"); sys.exit(1)
 
+          # Obfuscation de l'adresse pour la vie privée (on masque le n° de rue)
           def obfuscate(a: str) -> str:
-              if not a: return ""
-              a = " ".join(a.replace("#","").split())
+              if not a:
+                  return ""
+              a = " ".join(a.replace("#", "").split())
               parts = a.split(",")
               head = parts[0].split()
               if head and head[0].isdigit():
@@ -103,26 +105,38 @@ jobs:
 
           addr_pub = obfuscate(addr)
 
+          # Heure locale Europe/Paris (on ne garde que l'heure)
           pretty_time = tsiso
           try:
-              dt = datetime.fromisoformat(tsiso.replace("Z","+00:00"))
+              dt = datetime.fromisoformat(tsiso.replace("Z", "+00:00"))
               if ZoneInfo:
-                  pretty_time = dt.astimezone(ZoneInfo("Europe/Paris")).strftime("%d/%m %H:%M")
+                  pretty_time = dt.astimezone(ZoneInfo("Europe/Paris")).strftime("%H:%M")
           except Exception:
               pass
 
-          line1 = f"⚡️ Coupure signalée à {city}"
-          if dept: line1 += f" ({dept})"
-          if pc:   line1 += f" {pc}"
-          line1 += f" — {pretty_time}"
+          # On choisit ce qu'on affiche comme "rue"
+          rue = addr_pub or city
 
-          lines = [line1]
-          if addr_pub: lines.append(f"📍 {addr_pub}")
-          if extra:    lines.append(f"ℹ️ {extra}")
-          if tool:     lines.append(tool)
+          # Département (sinon code postal à défaut)
+          dept_or_cp = dept or pc
 
-          msg = "\n".join([l for l in lines if l]).strip()[:280]
-          key = hashlib.sha256((city+"|"+addr+"|"+tsiso).encode()).hexdigest()[:16]
+          # 1ère ligne : modèle demandé
+          line1 = f"⚡ Coupure d’électricité signalée à {rue}, {city}"
+          if dept_or_cp:
+              line1 += f" ({dept_or_cp})"
+          line1 += f" à {pretty_time}"
+
+          # Lignes suivantes fixes
+          line2 = "Nos équipes suivent la situation de près."
+          line3 = "🔁 Mise à jour dès que le courant est rétabli."
+          line4 = "📡 Restez informés avec #CoupureElec by @coupure_elec"
+
+          lines = [line1, "", line2, "", line3, "", line4]
+
+          msg = "\n".join(lines).strip()[:280]
+
+          # Dédup (ville+adresse+timestamp) inchangé
+          key = hashlib.sha256((city + "|" + addr + "|" + tsiso).encode()).hexdigest()[:16]
 
           with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as f:
               print("message<<EOF", file=f)
