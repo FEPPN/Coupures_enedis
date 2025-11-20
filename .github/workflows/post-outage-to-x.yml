@@ -129,7 +129,7 @@ jobs:
           # Lignes suivantes fixes
           line2 = "Nos équipes suivent la situation de près."
           line3 = "🔁 Mise à jour dès que le courant est rétabli."
-          line4 = "📡 Restez informés avec #CoupureElec by @coupure_elec"
+          line4 = "📡 Restez informés avec #CoupureElec by @panne_papernest"
 
           lines = [line1, "", line2, "", line3, "", line4]
 
