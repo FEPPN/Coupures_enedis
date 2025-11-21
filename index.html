@@ -103,7 +103,7 @@
       document.documentElement.offsetHeight
     );
     
-    window.parent.postMessage({ height: height }, '*');
+    window.parent.postMessage({ height: height + 10 }, '*');
   }
 
   // Envoyer la hauteur au chargement
