@@ -82,15 +82,41 @@
   </main>
 
   <!-- ⚙️ Config du backend -->
-  <script>
-    window.PPN_CONFIG = {
-      // 👉 remplace par TON URL /exec Apps Script
-      API_BASE: "https://script.google.com/macros/s/AKfycby-jw7HF-DZAfGCiptKNm1npZmH_zaTMCk-35KoenrEL7xmpRZ9uO-NUxQZnp-9e4WlKw/exec",
-      // 👉 DOIT être identique à API_KEY dans Apps Script
-      API_KEY:  "papernest2025",
-      LIMIT_LATEST: 20
-    };
-  </script>
-  <script src="./app.js" defer></script>
+<script>
+  window.PPN_CONFIG = {
+    // 👉 remplace par TON URL /exec Apps Script
+    API_BASE: "https://script.google.com/macros/s/AKfycby-jw7HF-DZAfGCiptKNm1npZmH_zaTMCk-35KoenrEL7xmpRZ9uO-NUxQZnp-9e4WlKw/exec",
+    // 👉 DOIT être identique à API_KEY dans Apps Script
+    API_KEY:  "papernest2025",
+    LIMIT_LATEST: 20
+  };
+</script>
+
+<!-- 📏 Script pour ajuster la hauteur de l'iframe -->
+<script>
+  function sendHeight() {
+    const height = Math.max(
+      document.body.scrollHeight,
+      document.body.offsetHeight,
+      document.documentElement.clientHeight,
+      document.documentElement.scrollHeight,
+      document.documentElement.offsetHeight
+    );
+    
+    window.parent.postMessage({ height: height }, '*');
+  }
+
+  // Envoyer la hauteur au chargement
+  window.addEventListener('load', sendHeight);
+
+  // Envoyer la hauteur quand le contenu change
+  const observer = new ResizeObserver(sendHeight);
+  observer.observe(document.body);
+
+  // Envoyer aussi après un court délai
+  setTimeout(sendHeight, 500);
+</script>
+
+<script src="./app.js" defer></script>
 </body>
 </html>
