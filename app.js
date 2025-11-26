@@ -111,7 +111,6 @@ function renderDetails(list){
         Début : ${esc(d.dateDebut||'—')}
         ${d.dateFinPrevue ? ' – Rétablissement estimé : '+esc(d.dateFinPrevue) : ''}
         <br>Type : ${esc(d.typeIncident||'—')} | État : ${esc(d.etat||'—')}
-        ${d.id ? '<br><small>ID : '+esc(d.id)+'</small>' : ''}
       </li>
     `;
   }).join('');
