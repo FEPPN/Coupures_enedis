@@ -19,7 +19,7 @@ on:
         description: "Adresse"
         required: false
         type: string
-        default: "12 Rue de la Paix"
+        default: "16ter Rue de la Paix"
       postal_code:
         description: "CP"
         required: false
@@ -90,7 +90,7 @@ jobs:
           if not city or not tsiso:
               print("::error::Missing city or timestamp_iso"); sys.exit(1)
 
-         # Obfuscation de l'adresse (masque n° + bis/ter)
+          # Obfuscation de l'adresse (masque n° + bis/ter)
           def obfuscate(a: str) -> str:
               if not a: return ""
               # Nettoyage des espaces multiples
@@ -99,12 +99,7 @@ jobs:
               parts = a.split(",")
               street_part = parts[0].strip()
 
-              # REGEX EXPLICATION :
-              # ^\d+       : Commence par des chiffres
-              # (?: ... )? : Groupe optionnel pour le suffixe
-              # [\s-]* : Espace ou tiret éventuel (ex: 10-bis ou 16ter)
-              # (?:bis|ter|quater|quinquies|[a-z]) : Les mots clés ou une lettre simple (12A)
-              # \s+        : L'espace qui suit le numéro avant le nom de la rue
+              # REGEX : Chiffres + suffixe optionnel (bis/ter/A) + espace
               pattern = r"^\d+(?:[\s-]*(?:bis|ter|quater|quinquies|[a-z]))?\s+"
               
               # Remplacement par une chaîne vide
@@ -114,6 +109,9 @@ jobs:
               
               # On reconstruit l'adresse sans le numéro
               return ", ".join([p.strip() for p in parts if p.strip()])
+
+          # Appel de la fonction (Correctement aligné ici)
+          addr_pub = obfuscate(addr)
 
           # Heure locale Europe/Paris (on ne garde que l'heure)
           pretty_time = tsiso
@@ -168,11 +166,11 @@ jobs:
       - name: Send tweet
         if: steps.dedup.outputs.cache-hit != 'true'
         env:
-          API_KEY:        ${{ secrets.X_API_KEY }}
-          API_SECRET:     ${{ secrets.X_API_KEY_SECRET }}
-          ACCESS_TOKEN:   ${{ secrets.X_ACCESS_TOKEN }}
-          ACCESS_SECRET:  ${{ secrets.X_ACCESS_TOKEN_SECRET }}
-          TWEET_MESSAGE:  ${{ steps.build.outputs.message }}
+          API_KEY:         ${{ secrets.X_API_KEY }}
+          API_SECRET:      ${{ secrets.X_API_KEY_SECRET }}
+          ACCESS_TOKEN:    ${{ secrets.X_ACCESS_TOKEN }}
+          ACCESS_SECRET:   ${{ secrets.X_ACCESS_TOKEN_SECRET }}
+          TWEET_MESSAGE:   ${{ steps.build.outputs.message }}
         run: |
           python - <<'PY'
           import os, tweepy
