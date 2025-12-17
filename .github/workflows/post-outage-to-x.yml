@@ -72,7 +72,7 @@ jobs:
         shell: bash
         run: |
           python - <<'PY'
-          import os, sys, hashlib
+          import os, sys, hashlib, re
           from datetime import datetime
           try:
               from zoneinfo import ZoneInfo
@@ -90,20 +90,30 @@ jobs:
           if not city or not tsiso:
               print("::error::Missing city or timestamp_iso"); sys.exit(1)
 
-          # Obfuscation de l'adresse pour la vie privée (on masque le n° de rue)
+         # Obfuscation de l'adresse (masque n° + bis/ter)
           def obfuscate(a: str) -> str:
-              if not a:
-                  return ""
+              if not a: return ""
+              # Nettoyage des espaces multiples
               a = " ".join(a.replace("#", "").split())
+              
               parts = a.split(",")
-              head = parts[0].split()
-              if head and head[0].isdigit():
-                  head = ["🔢"] + head[1:]
-              head = " ".join(head)
-              tail = ", ".join([p.strip() for p in parts[1:] if p.strip()])
-              return head + (", " + tail if tail else "")
+              street_part = parts[0].strip()
 
-          addr_pub = obfuscate(addr)
+              # REGEX EXPLICATION :
+              # ^\d+       : Commence par des chiffres
+              # (?: ... )? : Groupe optionnel pour le suffixe
+              # [\s-]* : Espace ou tiret éventuel (ex: 10-bis ou 16ter)
+              # (?:bis|ter|quater|quinquies|[a-z]) : Les mots clés ou une lettre simple (12A)
+              # \s+        : L'espace qui suit le numéro avant le nom de la rue
+              pattern = r"^\d+(?:[\s-]*(?:bis|ter|quater|quinquies|[a-z]))?\s+"
+              
+              # Remplacement par une chaîne vide
+              street_cleaned = re.sub(pattern, "", street_part, flags=re.IGNORECASE)
+              
+              parts[0] = street_cleaned
+              
+              # On reconstruit l'adresse sans le numéro
+              return ", ".join([p.strip() for p in parts if p.strip()])
 
           # Heure locale Europe/Paris (on ne garde que l'heure)
           pretty_time = tsiso
