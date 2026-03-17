@@ -48,7 +48,7 @@
     <!-- Formulaire de signalement -->
     <section class="ppn-card">
       <details>
-        <summary onclick="trackTool('clic_accordeon_signaler_coupure');>Signaler une coupure dans votre rue</summary>
+        <summary onclick="trackTool('clic_accordeon_signaler_coupure')">Signaler une coupure dans votre rue</summary>
         <div class="ppn-report">
           <div class="ppn-grid">
             <div>
@@ -109,11 +109,11 @@
   // Envoyer la hauteur au chargement
   window.addEventListener('load', sendHeight);
 
-  // Envoyer la hauteur quand le contenu change
-  const observer = new ResizeObserver(sendHeight);
-  observer.observe(document.body);
+  // Utilisation d'un nom spécifique pour éviter les conflits
+  const ppnResizeObserver = new ResizeObserver(sendHeight);
+  ppnResizeObserver.observe(document.body);
 
-  // Envoyer aussi après un court délai
+  // Envoyer aussi après un court délai pour parer aux injections de contenu tardives
   setTimeout(sendHeight, 500);
 </script>
 
@@ -127,7 +127,7 @@
     }
     });
     }, { threshold: 0.5 });
-    observer.observe(document.querySelector('.container'));
+    observer.observe(document.querySelector('.ppn-container'));
   </script>
   <script>
   // Cette fonction fait le pont entre l'iframe GitHub et notre site
