@@ -119,6 +119,17 @@
 
 <script src="./app.js" defer></script>
   <script>
+    const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+    if (entry.isIntersecting) {
+    trackTool('tool_visible');
+    observer.unobserve(entry.target);
+    }
+    });
+    }, { threshold: 0.5 });
+    observer.observe(document.querySelector('.container'));
+  </script>
+  <script>
   // Cette fonction fait le pont entre l'iframe GitHub et notre site
   function trackTool(actionName) {
         const nom_du_tool = "tool-coupures-enedis";
