@@ -118,5 +118,16 @@
 </script>
 
 <script src="./app.js" defer></script>
+  <script>
+  // Cette fonction fait le pont entre l'iframe GitHub et notre site
+  function trackTool(actionName) {
+        const nom_du_tool = "tool-coupures-enedis";
+        window.parent.postMessage({
+          'event': 'tool_interaction',
+          'tool_name': nom_du_tool, 
+          'tool_action': actionName
+        }, '*');
+      }
+  </script>
 </body>
 </html>
