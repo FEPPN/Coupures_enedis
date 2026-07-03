@@ -17,57 +17,53 @@
       </p>
     </header>
 
-    <!-- Recherche / statut -->
     <section class="ppn-card">
       <label for="ppn-address" class="ppn-label">Votre adresse ou code postal</label>
       <div class="ppn-autocomplete">
-        <input id="ppn-address" type="text" placeholder="Ex : 74600, Annecy, 48 Rue ..." autocomplete="off" />
+        <input id="ppn-address" type="text" placeholder="Ex : 74600, Annecy, 48 Rue ..." autocomplete="off" onchange="trackTool('input_recherche_adresse', { form_type: 'text' })" />
         <ul id="ppn-suggest" class="ppn-suggest" role="listbox" aria-label="Suggestions"></ul>
       </div>
 
       <div class="ppn-actions">
-        <button onclick="trackTool('clic_verifier_coupure')" id="ppn-check" class="ppn-btn">Vérifier</button>
+        <button onclick="trackTool('select_verifier_coupure')" id="ppn-check" class="ppn-btn">Vérifier</button>
         <div id="ppn-spinner" class="ppn-spinner" hidden></div>
       </div>
 
       <div id="ppn-status" class="ppn-status" role="status" aria-live="polite"></div>
     </section>
 
-    <!-- Détails des coupures -->
     <section id="ppn-details-wrap" class="ppn-card" hidden>
       <h2>Détails des coupures détectées</h2>
       <ul id="ppn-details" class="ppn-details-list"></ul>
     </section>
 
-    <!-- Derniers signalements -->
     <section id="ppn-latest-wrap" class="ppn-card" hidden>
       <h2>Dernières coupures signalées aujourd'hui dans votre département (<span id="ppn-dept"></span>)</h2>
       <div id="ppn-latest" class="ppn-table-wrap"></div>
     </section>
 
-    <!-- Formulaire de signalement -->
     <section class="ppn-card">
       <details>
-        <summary onclick="trackTool('clic_accordeon_signaler_coupure')">Signaler une coupure dans votre rue</summary>
+        <summary onclick="trackTool('click_accordeon_signaler', { is_click: true })">Signaler une coupure dans votre rue</summary>
         <div class="ppn-report">
           <div class="ppn-grid">
             <div>
               <label for="ppn-report-city" class="ppn-label">Ville</label>
-              <input id="ppn-report-city" type="text" placeholder="Ex : Villeurbanne" />
+              <input id="ppn-report-city" type="text" placeholder="Ex : Villeurbanne" onchange="trackTool('input_ville_signalement', { form_type: 'text' })" />
             </div>
             <div>
               <label for="ppn-report-dept" class="ppn-label">Département (numéro)</label>
-              <input id="ppn-report-dept" type="text" placeholder="Ex : 69" />
+              <input id="ppn-report-dept" type="text" placeholder="Ex : 69" onchange="trackTool('input_dept_signalement', { form_type: 'text' })" />
             </div>
           </div>
 
           <label for="ppn-report-address" class="ppn-label">Adresse (facultatif)</label>
-          <input id="ppn-report-address" type="text" placeholder="Ex : 76 Rue Léon Blum" />
+          <input id="ppn-report-address" type="text" placeholder="Ex : 76 Rue Léon Blum" onchange="trackTool('input_adresse_signalement', { form_type: 'text' })" />
 
           <label for="ppn-report-note" class="ppn-label">Note (optionnel)</label>
-          <input id="ppn-report-note" type="text" placeholder="Ex : pannes répétées, depuis 10h..." />
+          <input id="ppn-report-note" type="text" placeholder="Ex : pannes répétées, depuis 10h..." onchange="trackTool('input_note_signalement', { form_type: 'text' })" />
 
-          <button onclick="trackTool('clic_envoi_signalement')" id="ppn-report-btn" class="ppn-btn-secondary">Envoyer le signalement</button>
+          <button onclick="trackTool('select_envoi_signalement')" id="ppn-report-btn" class="ppn-btn-secondary">Envoyer le signalement</button>
           <div id="ppn-report-msg" class="ppn-msg" role="status" aria-live="polite"></div>
         </div>
       </details>
@@ -81,18 +77,15 @@
     </footer>
   </main>
 
-  <!-- ⚙️ Config du backend -->
-<script>
+  <script>
   window.PPN_CONFIG = {
-    // 👉 remplace par TON URL /exec Apps Script
+    // 👉 Si tu as dû générer une NOUVELLE URL Apps Script tout à l'heure, n'oublie pas de la coller ici :
     API_BASE: "https://script.google.com/macros/s/AKfycby-jw7HF-DZAfGCiptKNm1npZmH_zaTMCk-35KoenrEL7xmpRZ9uO-NUxQZnp-9e4WlKw/exec",
-    // 👉 DOIT être identique à API_KEY dans Apps Script
     API_KEY:  "papernest2025",
     LIMIT_LATEST: 20
   };
 </script>
 
-<!-- 📏 Script pour ajuster la hauteur de l'iframe -->
 <script>
   function sendHeight() {
     const height = Math.max(
@@ -118,6 +111,7 @@
 </script>
 
 <script src="./app.js" defer></script>
+  
   <script>
     const observer = new IntersectionObserver((entries) => {
     entries.forEach(entry => {
@@ -129,16 +123,51 @@
     }, { threshold: 0.5 });
     observer.observe(document.querySelector('.ppn-container'));
   </script>
+
   <script>
-  // Cette fonction fait le pont entre l'iframe GitHub et notre site
-  function trackTool(actionName) {
+    function trackTool(actionName, customParams = {}) {
         const nom_du_tool = "tool-coupures-enedis";
-        window.parent.postMessage({
-          'event': 'tool_interaction',
-          'tool_name': nom_du_tool, 
-          'tool_action': actionName
-        }, '*');
-      }
+        
+        let gtmEvent = "form"; 
+        if (actionName === "tool_visible") {
+            gtmEvent = "impression"; 
+        } else if (customParams.is_cta || (actionName && actionName.includes("click_cta"))) {
+            gtmEvent = "click_cta"; 
+        } else if (customParams.is_click || (actionName && actionName.includes("reset"))) {
+            gtmEvent = "click"; 
+        }
+
+        let eventCategory = "engagement";
+        
+        let eventType = customParams.event_type || 'interaction';
+        if (actionName === "tool_visible" || (actionName && actionName.includes("view_result"))) {
+            eventType = "impression"; 
+        }
+
+        let payload = {
+            'event_system': 'papernest_tool',
+            'event': gtmEvent,
+            'event_component': nom_du_tool,
+            'event_category': eventCategory,
+            'event_type': eventType,
+            'event_position': 'content'
+        };
+
+        if (actionName && actionName !== "tool_visible") {
+            payload.event_step = actionName;
+        }
+
+        if (gtmEvent === "form") {
+            if (customParams.form_type === "none" || (actionName && (actionName.includes("view_result") || actionName.includes("tooltip")))) {
+                // Reste vide
+            } else {
+                payload.event_form_type = customParams.form_type || "select"; 
+            }
+        }
+        
+        window.parent.postMessage(payload, '*');
+    }
   </script>
 </body>
 </html>
+
