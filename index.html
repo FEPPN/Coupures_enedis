@@ -44,7 +44,7 @@
 
     <section class="ppn-card">
       <details>
-        <summary onclick="trackTool('clic_accordeon_signaler_coupure')">Signaler une coupure dans votre rue</summary>
+        <summary onclick="trackTool('clic_accordeon_signaler_coupure', { is_click: true })">Signaler une coupure dans votre rue</summary>
         <div class="ppn-report">
           <div class="ppn-grid">
             <div>
@@ -77,9 +77,9 @@
     </footer>
   </main>
 
-<script>
+  <script>
   window.PPN_CONFIG = {
-    // Garde bien l'URL de ton script actif ici :
+    // Toujours l'URL du script Google actif
     API_BASE: "https://script.google.com/macros/s/AKfycby-jw7HF-DZAfGCiptKNm1npZmH_zaTMCk-35KoenrEL7xmpRZ9uO-NUxQZnp-9e4WlKw/exec",
     API_KEY:  "papernest2025",
     LIMIT_LATEST: 20
@@ -118,14 +118,55 @@
   </script>
 
   <script>
-  function trackTool(actionName) {
-        const nom_du_tool = "tool-coupures-enedis";
-        window.parent.postMessage({
-          'event': 'tool_interaction',
-          'tool_name': nom_du_tool, 
-          'tool_action': actionName
-        }, '*');
-      }
+    function trackTool(actionName, customParams = {}) {
+        const nom_du_tool = "tool-coupures-enedis"; //
+        
+        // 1. Détermination de l'événement GTM principal
+        let gtmEvent = "form"; 
+        if (actionName === "tool_visible") {
+            gtmEvent = "impression"; 
+        } else if (customParams.is_cta || (actionName && actionName.includes("click_cta"))) {
+            gtmEvent = "click_cta"; 
+        } else if (customParams.is_click || (actionName && actionName.includes("reset"))) {
+            gtmEvent = "click"; 
+        }
+
+        // 2. Catégorie unique pour l'ensemble des outils
+        let eventCategory = "engagement";
+
+        // 3. Détermination de l'event_type exact
+        let eventType = customParams.event_type || 'interaction';
+        if (actionName === "tool_visible" || (actionName && actionName.includes("view_result"))) {
+            eventType = "impression"; 
+        }
+
+        // 4. Construction du payload universel
+        let payload = {
+            'event_system': 'papernest_tool',
+            'event': gtmEvent,
+            'event_component': nom_du_tool,
+            'event_category': eventCategory,
+            'event_type': eventType,
+            'event_position': 'content'
+        };
+
+        // 5. Condition pour event_step
+        if (actionName && actionName !== "tool_visible") {
+            payload.event_step = actionName;
+        }
+
+        // 6. Ajout du paramètre event_form_type
+        if (gtmEvent === "form") {
+            if (customParams.form_type === "none" || (actionName && (actionName.includes("view_result") || actionName.includes("tooltip")))) {
+                // Reste vide
+            } else {
+                payload.event_form_type = customParams.form_type || "select"; 
+            }
+        }
+        
+        // 7. Envoi du payload brut à la page parente
+        window.parent.postMessage(payload, '*');
+    }
   </script>
 </body>
 </html>
