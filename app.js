@@ -162,6 +162,9 @@ suggest.addEventListener('click', (e)=>{
   rCity.value = sel.city || '';
   rDept.value = deptFromPostcode(sel.postcode);
   lastSelected = sel; // <- on mémorise pour le backend
+  
+  // NOUVEAU TRACKING : Sélection d'une suggestion
+  trackTool('select_suggestion_adresse');
 });
 
 document.addEventListener('click', (e)=>{
@@ -171,7 +174,9 @@ document.addEventListener('click', (e)=>{
 // --- Check + Latest ---
 btnCheck.addEventListener('click', async ()=>{
   const q = (input.value||'').trim();
-  if (!q){ statusBox.textContent='Veuillez saisir une adresse ou un code postal.'; statusBox.className='ppn-status err'; return; }
+  
+  // NOUVEAU TRACKING : Erreur adresse vide
+  if (!q){ statusBox.textContent='Veuillez saisir une adresse ou un code postal.'; statusBox.className='ppn-status err'; trackTool('erreur_saisie_vide'); return; }
 
   hide(statusBox); hide(detailsWrap); hide(latestWrap);
   show(spinner); btnCheck.disabled = true; btnCheck.textContent = 'Vérification…';
@@ -225,6 +230,9 @@ btnCheck.addEventListener('click', async ()=>{
     }
 
     show(statusBox);
+    
+    // NOUVEAU TRACKING : Affichage du résultat de la recherche
+    trackTool('view_result_recherche_statut');
 
     // 2) Derniers signalements
     const dept = j1.dept || deptFromPostcode(j1.cp || cp);
@@ -247,7 +255,10 @@ btnCheck.addEventListener('click', async ()=>{
 rBtn.addEventListener('click', async ()=>{
   const dept = (rDept.value||'').trim();
   const city = (rCity.value||'').trim();
-  if (!dept || !city){ rMsg.textContent='Renseignez au moins le département et la ville.'; rMsg.className='ppn-msg err'; return; }
+  
+  // NOUVEAU TRACKING : Erreur formulaire incomplet
+  if (!dept || !city){ rMsg.textContent='Renseignez au moins le département et la ville.'; rMsg.className='ppn-msg err'; trackTool('erreur_formulaire_incomplet'); return; }
+  
   const address = (rAddr.value||'').trim();
   const note = (rNote.value||'').trim();
 
@@ -261,6 +272,10 @@ rBtn.addEventListener('click', async ()=>{
     if (j.ok){
       rMsg.textContent = '✅ Votre signalement a bien été envoyé.';
       rMsg.className = 'ppn-msg ok';
+      
+      // NOUVEAU TRACKING : Envoi réussi du signalement
+      trackTool('view_result_succes_signalement');
+      
       rAddr.value=''; rNote.value='';
     } else {
       rMsg.textContent = '❌ Erreur lors de l’enregistrement.';
