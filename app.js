@@ -60,20 +60,17 @@ function prettifyMatchAddr(matchAddr = '', postal = '') {
 function pickBestLocation(details = []) {
   if (!Array.isArray(details) || !details.length) return '';
 
-  // 1) on privilégie un Match_addr exploitable (n'importe quel type d'incident)
   for (const d of details) {
     const maddr = d.matchAddr || d.Match_addr || '';
     const loc = prettifyMatchAddr(maddr, d.postal || '');
     if (loc) return loc;
   }
 
-  // 2) sinon, une localisation déjà fournie par Enedis (évite "inconnue" / "Secteur : ")
   for (const d of details) {
     const loc = (d.localisation || '').replace(/^Secteur\s*:\s*/i,'').trim();
     if (loc && !/inconnue/i.test(loc)) return loc;
   }
 
-  // 3) à défaut
   return '';
 }
 
@@ -96,7 +93,6 @@ function renderLatestTable(items){
   `;
 }
 
-// NEW: privilégie l’adresse travaux (Match_addr/Postal) pour chaque item
 function renderDetails(list){
   if (!list?.length) return '<li>Aucun détail disponible.</li>';
   return list.map(d=>{
@@ -161,10 +157,7 @@ suggest.addEventListener('click', (e)=>{
   suggest.style.display='none';
   rCity.value = sel.city || '';
   rDept.value = deptFromPostcode(sel.postcode);
-  lastSelected = sel; // <- on mémorise pour le backend
-  
-  // NOUVEAU TRACKING : Sélection d'une suggestion
-  trackTool('select_suggestion_adresse');
+  lastSelected = sel; 
 });
 
 document.addEventListener('click', (e)=>{
@@ -174,14 +167,11 @@ document.addEventListener('click', (e)=>{
 // --- Check + Latest ---
 btnCheck.addEventListener('click', async ()=>{
   const q = (input.value||'').trim();
-  
-  // NOUVEAU TRACKING : Erreur adresse vide
-  if (!q){ statusBox.textContent='Veuillez saisir une adresse ou un code postal.'; statusBox.className='ppn-status err'; trackTool('erreur_saisie_vide'); return; }
+  if (!q){ statusBox.textContent='Veuillez saisir une adresse ou un code postal.'; statusBox.className='ppn-status err'; return; }
 
   hide(statusBox); hide(detailsWrap); hide(latestWrap);
   show(spinner); btnCheck.disabled = true; btnCheck.textContent = 'Vérification…';
 
-  // Ville + CP à envoyer ; si on a une suggestion, on utilise son city/cp + on passe l’adresse
   let city = q, cp = '';
   const m = q.match(/\b(\d{5})\b/); if (m) cp = m[1];
 
@@ -198,7 +188,6 @@ btnCheck.addEventListener('click', async ()=>{
   }
 
   try{
-    // 1) Statut Enedis
     const r1 = await fetch(buildURL(params));
     const j1 = await r1.json();
 
@@ -210,14 +199,10 @@ btnCheck.addEventListener('click', async ()=>{
       return;
     }
 
-    // NEW: entête générique — préfère l’adresse travaux si dispo (toutes communes)
-      // Affichage statut
     if (j1.has_outage){
-      // NEW: entête générique — préfère l’adresse travaux si dispo (toutes communes)
       const primaryLoc = pickBestLocation(j1.details || []);
       const where = primaryLoc || `${j1.city} (${j1.cp})`;
       statusBox.innerHTML = `⚠️ <strong>Coupure(s) en cours</strong> — ${esc(where)}`;
-
       statusBox.className = 'ppn-status warn';
 
       if (j1.details?.length){
@@ -230,11 +215,7 @@ btnCheck.addEventListener('click', async ()=>{
     }
 
     show(statusBox);
-    
-    // NOUVEAU TRACKING : Affichage du résultat de la recherche
-    trackTool('view_result_recherche_statut');
 
-    // 2) Derniers signalements
     const dept = j1.dept || deptFromPostcode(j1.cp || cp);
     if (dept){
       const r2 = await fetch(buildURL({ fn:'latest', dept }));
@@ -251,13 +232,12 @@ btnCheck.addEventListener('click', async ()=>{
   }
 });
 
-// --- Report (UX avec retour visible) ---
+// --- Report ---
 rBtn.addEventListener('click', async ()=>{
   const dept = (rDept.value||'').trim();
   const city = (rCity.value||'').trim();
   
-  // NOUVEAU TRACKING : Erreur formulaire incomplet
-  if (!dept || !city){ rMsg.textContent='Renseignez au moins le département et la ville.'; rMsg.className='ppn-msg err'; trackTool('erreur_formulaire_incomplet'); return; }
+  if (!dept || !city){ rMsg.textContent='Renseignez au moins le département et la ville.'; rMsg.className='ppn-msg err'; return; }
   
   const address = (rAddr.value||'').trim();
   const note = (rNote.value||'').trim();
@@ -272,10 +252,6 @@ rBtn.addEventListener('click', async ()=>{
     if (j.ok){
       rMsg.textContent = '✅ Votre signalement a bien été envoyé.';
       rMsg.className = 'ppn-msg ok';
-      
-      // NOUVEAU TRACKING : Envoi réussi du signalement
-      trackTool('view_result_succes_signalement');
-      
       rAddr.value=''; rNote.value='';
     } else {
       rMsg.textContent = '❌ Erreur lors de l’enregistrement.';
