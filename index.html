@@ -20,12 +20,12 @@
     <section class="ppn-card">
       <label for="ppn-address" class="ppn-label">Votre adresse ou code postal</label>
       <div class="ppn-autocomplete">
-        <input id="ppn-address" type="text" placeholder="Ex : 74600, Annecy, 48 Rue ..." autocomplete="off" onchange="trackTool('input_recherche_adresse', { form_type: 'text' })" />
+        <input id="ppn-address" type="text" placeholder="Ex : 74600, Annecy, 48 Rue ..." autocomplete="off" />
         <ul id="ppn-suggest" class="ppn-suggest" role="listbox" aria-label="Suggestions"></ul>
       </div>
 
       <div class="ppn-actions">
-        <button onclick="trackTool('select_verifier_coupure')" id="ppn-check" class="ppn-btn">Vérifier</button>
+        <button onclick="trackTool('clic_verifier_coupure')" id="ppn-check" class="ppn-btn">Vérifier</button>
         <div id="ppn-spinner" class="ppn-spinner" hidden></div>
       </div>
 
@@ -44,26 +44,26 @@
 
     <section class="ppn-card">
       <details>
-        <summary onclick="trackTool('click_accordeon_signaler', { is_click: true })">Signaler une coupure dans votre rue</summary>
+        <summary onclick="trackTool('clic_accordeon_signaler_coupure')">Signaler une coupure dans votre rue</summary>
         <div class="ppn-report">
           <div class="ppn-grid">
             <div>
               <label for="ppn-report-city" class="ppn-label">Ville</label>
-              <input id="ppn-report-city" type="text" placeholder="Ex : Villeurbanne" onchange="trackTool('input_ville_signalement', { form_type: 'text' })" />
+              <input id="ppn-report-city" type="text" placeholder="Ex : Villeurbanne" />
             </div>
             <div>
               <label for="ppn-report-dept" class="ppn-label">Département (numéro)</label>
-              <input id="ppn-report-dept" type="text" placeholder="Ex : 69" onchange="trackTool('input_dept_signalement', { form_type: 'text' })" />
+              <input id="ppn-report-dept" type="text" placeholder="Ex : 69" />
             </div>
           </div>
 
           <label for="ppn-report-address" class="ppn-label">Adresse (facultatif)</label>
-          <input id="ppn-report-address" type="text" placeholder="Ex : 76 Rue Léon Blum" onchange="trackTool('input_adresse_signalement', { form_type: 'text' })" />
+          <input id="ppn-report-address" type="text" placeholder="Ex : 76 Rue Léon Blum" />
 
           <label for="ppn-report-note" class="ppn-label">Note (optionnel)</label>
-          <input id="ppn-report-note" type="text" placeholder="Ex : pannes répétées, depuis 10h..." onchange="trackTool('input_note_signalement', { form_type: 'text' })" />
+          <input id="ppn-report-note" type="text" placeholder="Ex : pannes répétées, depuis 10h..." />
 
-          <button onclick="trackTool('select_envoi_signalement')" id="ppn-report-btn" class="ppn-btn-secondary">Envoyer le signalement</button>
+          <button onclick="trackTool('clic_envoi_signalement')" id="ppn-report-btn" class="ppn-btn-secondary">Envoyer le signalement</button>
           <div id="ppn-report-msg" class="ppn-msg" role="status" aria-live="polite"></div>
         </div>
       </details>
@@ -77,9 +77,9 @@
     </footer>
   </main>
 
-  <script>
+<script>
   window.PPN_CONFIG = {
-    // 👉 Si tu as dû générer une NOUVELLE URL Apps Script tout à l'heure, n'oublie pas de la coller ici :
+    // Garde bien l'URL de ton script actif ici :
     API_BASE: "https://script.google.com/macros/s/AKfycby-jw7HF-DZAfGCiptKNm1npZmH_zaTMCk-35KoenrEL7xmpRZ9uO-NUxQZnp-9e4WlKw/exec",
     API_KEY:  "papernest2025",
     LIMIT_LATEST: 20
@@ -95,18 +95,11 @@
       document.documentElement.scrollHeight,
       document.documentElement.offsetHeight
     );
-    
     window.parent.postMessage({ height: height + 10 }, '*');
   }
-
-  // Envoyer la hauteur au chargement
   window.addEventListener('load', sendHeight);
-
-  // Utilisation d'un nom spécifique pour éviter les conflits
   const ppnResizeObserver = new ResizeObserver(sendHeight);
   ppnResizeObserver.observe(document.body);
-
-  // Envoyer aussi après un court délai pour parer aux injections de contenu tardives
   setTimeout(sendHeight, 500);
 </script>
 
@@ -125,49 +118,14 @@
   </script>
 
   <script>
-    function trackTool(actionName, customParams = {}) {
+  function trackTool(actionName) {
         const nom_du_tool = "tool-coupures-enedis";
-        
-        let gtmEvent = "form"; 
-        if (actionName === "tool_visible") {
-            gtmEvent = "impression"; 
-        } else if (customParams.is_cta || (actionName && actionName.includes("click_cta"))) {
-            gtmEvent = "click_cta"; 
-        } else if (customParams.is_click || (actionName && actionName.includes("reset"))) {
-            gtmEvent = "click"; 
-        }
-
-        let eventCategory = "engagement";
-        
-        let eventType = customParams.event_type || 'interaction';
-        if (actionName === "tool_visible" || (actionName && actionName.includes("view_result"))) {
-            eventType = "impression"; 
-        }
-
-        let payload = {
-            'event_system': 'papernest_tool',
-            'event': gtmEvent,
-            'event_component': nom_du_tool,
-            'event_category': eventCategory,
-            'event_type': eventType,
-            'event_position': 'content'
-        };
-
-        if (actionName && actionName !== "tool_visible") {
-            payload.event_step = actionName;
-        }
-
-        if (gtmEvent === "form") {
-            if (customParams.form_type === "none" || (actionName && (actionName.includes("view_result") || actionName.includes("tooltip")))) {
-                // Reste vide
-            } else {
-                payload.event_form_type = customParams.form_type || "select"; 
-            }
-        }
-        
-        window.parent.postMessage(payload, '*');
-    }
+        window.parent.postMessage({
+          'event': 'tool_interaction',
+          'tool_name': nom_du_tool, 
+          'tool_action': actionName
+        }, '*');
+      }
   </script>
 </body>
 </html>
-
